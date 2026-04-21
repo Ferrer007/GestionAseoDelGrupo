@@ -1,13 +1,16 @@
 'use strict';
 
+// ── Clean Code: nombre del módulo expresa su propósito exacto ──
 const EventBus = (() => {
   const _subscriptions = {};
 
+  // Clean Code: nombre del parámetro descriptivo (eventName, no 'e' o 'ev')
   const subscribe = (eventName, callback) => {
     if (!_subscriptions[eventName]) _subscriptions[eventName] = [];
     _subscriptions[eventName].push(callback);
   };
 
+  // Clean Code: función pequeña, hace una sola cosa
   const publish = (eventName, data) => {
     const listeners = _subscriptions[eventName] || [];
     listeners.forEach(callback => callback(data));
@@ -18,8 +21,10 @@ const EventBus = (() => {
 
 
 const StorageModule = (() => {
+  // Clean Code: sin "magic strings", la clave está en una constante con nombre claro
   const STORAGE_KEY = 'aseo_grupo_v3';
 
+  // Clean Code: cada función hace una sola operación, nombre = verbo + qué
   const save = state => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   };
@@ -28,7 +33,7 @@ const StorageModule = (() => {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY));
     } catch {
-      return null;
+      return null; // Clean Code: manejo de error explícito, no silencioso
     }
   };
 
@@ -41,6 +46,7 @@ const StorageModule = (() => {
 
 
 const MembersModule = (() => {
+  // Clean Code: datos centralizados en un solo lugar (fuente de verdad única)
   const _members = [
     'Alisson Paola Jaramillo Echeverry',
     'Carlos Andrés Zuluaga Atehortua',
@@ -66,6 +72,7 @@ const MembersModule = (() => {
     'Valeria Becerra Giraldo',
   ];
 
+  // Clean Code: devuelve copia para proteger el array interno
   const getAll   = () => [..._members];
   const getCount = () => _members.length;
 
@@ -74,6 +81,7 @@ const MembersModule = (() => {
 
 
 const AssignmentModule = (() => {
+  // Clean Code: configuración de días en estructura clara y legible
   const DAYS = [
     { key: 'lun', label: 'Lunes',      color: '#4A7FD4' },
     { key: 'mar', label: 'Martes',     color: '#4CAF6B' },
@@ -82,10 +90,12 @@ const AssignmentModule = (() => {
     { key: 'vie', label: 'Viernes',    color: '#D4A840' },
   ];
 
+  // Clean Code: sin números mágicos — 604800000 no dice nada, MS_PER_WEEK sí
   const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
   let _state = null;
 
+  // Clean Code: función privada con nombre que explica exactamente qué hace
   const _formatDate = date =>
     date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
 
@@ -97,15 +107,17 @@ const AssignmentModule = (() => {
     });
 
   const _getThisMonday = () => {
-    const today      = new Date();
-    const dayOfWeek  = today.getDay();
+    const today        = new Date();
+    const dayOfWeek    = today.getDay();
+    // Clean Code: variable auxiliar con nombre descriptivo
     const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday     = new Date(today);
+    const monday       = new Date(today);
     monday.setDate(today.getDate() + daysToMonday);
     monday.setHours(0, 0, 0, 0);
     return monday.getTime();
   };
 
+  // Clean Code: función de una línea, nombre dice exactamente qué hace
   const _pickRandom = array =>
     array[Math.floor(Math.random() * array.length)];
 
@@ -158,6 +170,7 @@ const AssignmentModule = (() => {
         .filter(Boolean)
     );
 
+    // Clean Code: nombre de variable explica su propósito
     const availableMembers = MembersModule.getAll().filter(m => !occupied.has(m));
 
     if (availableMembers.length === 0) {
@@ -191,13 +204,14 @@ const AssignmentModule = (() => {
 
 
 const Renderer = (() => {
+  // Clean Code: función privada enfocada en renderizar solo las tarjetas
   const _renderDayCards = state => {
     const grid = document.getElementById('daysGrid');
     const days = AssignmentModule.getDays();
 
     grid.innerHTML = days.map((day, index) => {
       const slot  = state.assignments[day.key];
-      const isOut = slot.absent;
+      const isOut = slot.absent; // Clean Code: variable booleana con nombre claro
       return `
         <div class="card">
           <div class="card-strip" style="background:${day.color}"></div>
@@ -225,6 +239,7 @@ const Renderer = (() => {
     );
   };
 
+  // Clean Code: función separada para estadísticas, no mezclada con tarjetas
   const _renderStats = state => {
     document.getElementById('weekLabel').textContent =
       `> Semana ${state.weekNumber}  ·  ${state.dates[0]} — ${state.dates[4]}`;
@@ -237,7 +252,7 @@ const Renderer = (() => {
 
   const _renderMembersGrid = state => {
     const days      = AssignmentModule.getDays();
-    const roleIndex = {};
+    const roleIndex = {}; // Clean Code: nombre describe qué contiene
 
     days.forEach(day => {
       const slot     = state.assignments[day.key];
@@ -268,6 +283,7 @@ const Renderer = (() => {
       }).join('');
   };
 
+  // Clean Code: función maestra que orquesta las 3 sub-funciones
   const render = state => {
     _renderDayCards(state);
     _renderStats(state);
@@ -309,6 +325,7 @@ const ModalModule = (() => {
   };
 
   _btnConfirm.addEventListener('click', () => {
+    // Clean Code: variable local con nombre que explica su intención
     const callbackToRun = _pendingCallback;
     _hide();
     if (callbackToRun) callbackToRun();
