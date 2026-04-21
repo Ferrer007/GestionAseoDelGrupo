@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Aseo — Grupo</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════ -->
+  <header class="header">
+    <div>
+      <div class="h-title">Aseo del Grupo</div>
+      <div class="h-sub">&gt; TASK_INIT: ASIGNACION_SEMANAL_RESPONSIVA · v2.0</div>
+    </div>
+    <div class="h-actions">
+      <button class="btn" id="btnReset">↺ Resetear</button>
+      <button class="btn btn-primary" id="btnNewWeek">+ Nueva semana</button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       BARRA DE SEMANA
+  ══════════════════════════════════════ -->
+  <div class="week-bar">
+    <span id="weekLabel"></span>
+    <span class="pill" id="weekPill"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TARJETAS DE DÍAS
+  ══════════════════════════════════════ -->
+  <div class="days-grid" id="daysGrid"></div>
+
+  <!-- ══════════════════════════════════════
+       ESTADÍSTICAS
+  ══════════════════════════════════════ -->
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-lbl">Miembros</div>
+      <div class="stat-val">22</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Semana</div>
+      <div class="stat-val" id="sWeek">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Activos hoy</div>
+      <div class="stat-val" id="sActive">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Reemplazos</div>
+      <div class="stat-val" id="sRepl">—</div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ══════════════════════════════════════
+       ROTACIÓN DE MIEMBROS
+  ══════════════════════════════════════ -->
+  <div class="sec-title">Rotación de miembros</div>
+  <div class="members-grid" id="membersGrid"></div>
+
+  <!-- ══════════════════════════════════════
+       TOAST (notificación flotante)
+  ══════════════════════════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ══════════════════════════════════════
+       MODAL DE CONFIRMACIÓN
+  ══════════════════════════════════════ -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-title" id="mTitle"></div>
+      <div class="modal-body"  id="mBody"></div>
+      <div class="modal-foot">
+        <button class="btn"         id="mCancel">Cancelar</button>
+        <button class="btn btn-primary" id="mConfirm">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
