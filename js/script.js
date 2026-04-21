@@ -1,6 +1,7 @@
 'use strict';
 
 // ── Clean Code: nombre del módulo expresa su propósito exacto ──
+// ── SOLID - DIP: los módulos dependen de esta abstracción, no entre sí directamente ──
 const EventBus = (() => {
   const _subscriptions = {};
 
@@ -16,10 +17,12 @@ const EventBus = (() => {
     listeners.forEach(callback => callback(data));
   };
 
+  // SOLID - ISP: API mínima, expone solo lo que otros módulos necesitan
   return { subscribe, publish };
 })();
 
 
+// SOLID - SRP: única responsabilidad → manejar la persistencia en localStorage
 const StorageModule = (() => {
   // Clean Code: sin "magic strings", la clave está en una constante con nombre claro
   const STORAGE_KEY = 'aseo_grupo_v3';
@@ -41,10 +44,12 @@ const StorageModule = (() => {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  // SOLID - ISP: solo expone save, load y clear — nada más
   return { save, load, clear };
 })();
 
 
+// SOLID - SRP: única responsabilidad → proveer los datos del grupo
 const MembersModule = (() => {
   // Clean Code: datos centralizados en un solo lugar (fuente de verdad única)
   const _members = [
@@ -72,14 +77,17 @@ const MembersModule = (() => {
     'Valeria Becerra Giraldo',
   ];
 
-  // Clean Code: devuelve copia para proteger el array interno
+  // Clean Code: devuelve copia para proteger el array interno (encapsulación)
   const getAll   = () => [..._members];
   const getCount = () => _members.length;
 
+  // SOLID - ISP: expone solo getAll y getCount, el resto es privado
   return { getAll, getCount };
 })();
 
 
+// SOLID - SRP: única responsabilidad → lógica de asignación y reemplazos
+// SOLID - OCP: se pueden agregar más días o miembros sin modificar el núcleo
 const AssignmentModule = (() => {
   // Clean Code: configuración de días en estructura clara y legible
   const DAYS = [
@@ -93,6 +101,7 @@ const AssignmentModule = (() => {
   // Clean Code: sin números mágicos — 604800000 no dice nada, MS_PER_WEEK sí
   const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+  // Estado privado — solo accesible dentro del módulo (encapsulación)
   let _state = null;
 
   // Clean Code: función privada con nombre que explica exactamente qué hace
@@ -149,6 +158,7 @@ const AssignmentModule = (() => {
     const saved = StorageModule.load();
     _state = saved ?? _buildWeekState(0, 1, _getThisMonday());
     if (!saved) StorageModule.save(_state);
+    // SOLID - DIP: notifica a través de EventBus, no llama al Renderer directamente
     EventBus.publish('stateChanged', _state);
   };
 
@@ -199,10 +209,12 @@ const AssignmentModule = (() => {
   const getState = () => _state;
   const getDays  = () => DAYS;
 
+  // SOLID - ISP: API pública mínima y específica
   return { init, newWeek, markAbsent, reset, getState, getDays };
 })();
 
 
+// SOLID - SRP: única responsabilidad → renderizar la interfaz de usuario
 const Renderer = (() => {
   // Clean Code: función privada enfocada en renderizar solo las tarjetas
   const _renderDayCards = state => {
@@ -284,6 +296,7 @@ const Renderer = (() => {
   };
 
   // Clean Code: función maestra que orquesta las 3 sub-funciones
+  // SOLID - SRP: render no hace lógica, solo coordina el pintado
   const render = state => {
     _renderDayCards(state);
     _renderStats(state);
@@ -299,10 +312,12 @@ const Renderer = (() => {
     _toastTimeout = setTimeout(() => toastEl.classList.remove('on'), 2800);
   };
 
+  // SOLID - ISP: solo expone lo que App necesita suscribir
   return { render, showToast };
 })();
 
 
+// SOLID - SRP: única responsabilidad → manejar diálogos de confirmación
 const ModalModule = (() => {
   let _pendingCallback = null;
 
@@ -326,6 +341,7 @@ const ModalModule = (() => {
 
   _btnConfirm.addEventListener('click', () => {
     // Clean Code: variable local con nombre que explica su intención
+    // BUG FIX: se guarda el callback antes de _hide() porque _hide limpia _pendingCallback
     const callbackToRun = _pendingCallback;
     _hide();
     if (callbackToRun) callbackToRun();
@@ -337,12 +353,16 @@ const ModalModule = (() => {
     if (event.target === _overlay) _hide();
   });
 
+  // SOLID - ISP: solo expone show, hide es privado
   return { show: _show };
 })();
 
 
+// SOLID - DIP: App depende de abstracciones (EventBus, módulos) no de implementaciones
+// SOLID - SRP: única responsabilidad → arrancar y conectar la aplicación
 const App = (() => {
   const init = () => {
+    // SOLID - DIP: Renderer se conecta a través de EventBus, no directamente
     EventBus.subscribe('stateChanged', Renderer.render);
     EventBus.subscribe('toast',        Renderer.showToast);
 
