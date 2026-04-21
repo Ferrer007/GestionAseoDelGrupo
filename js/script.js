@@ -1,7 +1,14 @@
 'use strict';
 
-// ── Clean Code: nombre del módulo expresa su propósito exacto ──
-// ── SOLID - DIP: los módulos dependen de esta abstracción, no entre sí directamente ──
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: OBSERVER — EventBus
+//  Permite que los módulos se comuniquen sin conocerse entre sí.
+//  AssignmentModule publica eventos → Renderer los escucha y reacciona.
+//  Esto elimina actualizaciones manuales del DOM.
+//
+//  Clean Code: nombre del módulo expresa su propósito exacto
+//  SOLID - DIP: los módulos dependen de esta abstracción, no entre sí
+// ══════════════════════════════════════════════════════════════
 const EventBus = (() => {
   const _subscriptions = {};
 
@@ -22,7 +29,14 @@ const EventBus = (() => {
 })();
 
 
-// SOLID - SRP: única responsabilidad → manejar la persistencia en localStorage
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: MODULE — StorageModule
+//  Encapsula todo el acceso a localStorage. El resto del sistema
+//  no sabe NI cómo ni dónde se guardan los datos.
+//
+//  SOLID - SRP: única responsabilidad → manejar persistencia
+//  Clean Code: sin "magic strings", clave en constante descriptiva
+// ══════════════════════════════════════════════════════════════
 const StorageModule = (() => {
   // Clean Code: sin "magic strings", la clave está en una constante con nombre claro
   const STORAGE_KEY = 'aseo_grupo_v3';
@@ -49,7 +63,15 @@ const StorageModule = (() => {
 })();
 
 
-// SOLID - SRP: única responsabilidad → proveer los datos del grupo
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: MODULE — MembersModule
+//  Estado interno privado (_members). Solo se accede a través
+//  de la API pública (getAll, getCount). Nadie puede modificar
+//  el array directamente desde afuera.
+//
+//  SOLID - SRP: única responsabilidad → proveer los datos del grupo
+//  Clean Code: fuente de verdad única para los integrantes
+// ══════════════════════════════════════════════════════════════
 const MembersModule = (() => {
   // Clean Code: datos centralizados en un solo lugar (fuente de verdad única)
   const _members = [
@@ -86,8 +108,15 @@ const MembersModule = (() => {
 })();
 
 
-// SOLID - SRP: única responsabilidad → lógica de asignación y reemplazos
-// SOLID - OCP: se pueden agregar más días o miembros sin modificar el núcleo
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: MODULE — AssignmentModule
+//  Toda la lógica de negocio vive aquí, encapsulada.
+//  El estado _state es completamente privado.
+//  La API pública expone solo lo necesario.
+//
+//  SOLID - SRP: única responsabilidad → lógica de asignación y reemplazos
+//  SOLID - OCP: se pueden agregar más días o miembros sin tocar el núcleo
+// ══════════════════════════════════════════════════════════════
 const AssignmentModule = (() => {
   // Clean Code: configuración de días en estructura clara y legible
   const DAYS = [
@@ -101,8 +130,10 @@ const AssignmentModule = (() => {
   // Clean Code: sin números mágicos — 604800000 no dice nada, MS_PER_WEEK sí
   const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-  // Estado privado — solo accesible dentro del módulo (encapsulación)
+  // PATRÓN MODULE: estado privado, inaccesible desde fuera del módulo
   let _state = null;
+
+  // ── Funciones privadas (lógica pura) ──────────────────────
 
   // Clean Code: función privada con nombre que explica exactamente qué hace
   const _formatDate = date =>
@@ -154,11 +185,14 @@ const AssignmentModule = (() => {
     };
   };
 
+  // ── API pública ────────────────────────────────────────────
+
   const init = () => {
     const saved = StorageModule.load();
     _state = saved ?? _buildWeekState(0, 1, _getThisMonday());
     if (!saved) StorageModule.save(_state);
-    // SOLID - DIP: notifica a través de EventBus, no llama al Renderer directamente
+    // PATRÓN OBSERVER + SOLID DIP: notifica a través de EventBus,
+    // no llama al Renderer directamente
     EventBus.publish('stateChanged', _state);
   };
 
@@ -214,16 +248,24 @@ const AssignmentModule = (() => {
 })();
 
 
-// SOLID - SRP: única responsabilidad → renderizar la interfaz de usuario
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: MODULE + OBSERVER — Renderer
+//  Este módulo se suscribe (Observer) a 'stateChanged' y reacciona
+//  automáticamente pintando la UI. Nunca es llamado directamente
+//  por la lógica de negocio → desacoplamiento total.
+//
+//  SOLID - SRP: única responsabilidad → renderizar la UI
+//  Clean Code: funciones privadas pequeñas con responsabilidad única
+// ══════════════════════════════════════════════════════════════
 const Renderer = (() => {
-  // Clean Code: función privada enfocada en renderizar solo las tarjetas
+  // Clean Code: función privada enfocada solo en las tarjetas de días
   const _renderDayCards = state => {
     const grid = document.getElementById('daysGrid');
     const days = AssignmentModule.getDays();
 
     grid.innerHTML = days.map((day, index) => {
       const slot  = state.assignments[day.key];
-      const isOut = slot.absent; // Clean Code: variable booleana con nombre claro
+      const isOut = slot.absent; // Clean Code: booleano con nombre claro
       return `
         <div class="card">
           <div class="card-strip" style="background:${day.color}"></div>
@@ -251,7 +293,7 @@ const Renderer = (() => {
     );
   };
 
-  // Clean Code: función separada para estadísticas, no mezclada con tarjetas
+  // Clean Code: función separada para estadísticas
   const _renderStats = state => {
     document.getElementById('weekLabel').textContent =
       `> Semana ${state.weekNumber}  ·  ${state.dates[0]} — ${state.dates[4]}`;
@@ -295,7 +337,8 @@ const Renderer = (() => {
       }).join('');
   };
 
-  // Clean Code: función maestra que orquesta las 3 sub-funciones
+  // PATRÓN OBSERVER: esta es la función que se suscribe a 'stateChanged'
+  // Clean Code: función maestra que orquesta las 3 sub-funciones de pintado
   // SOLID - SRP: render no hace lógica, solo coordina el pintado
   const render = state => {
     _renderDayCards(state);
@@ -312,13 +355,21 @@ const Renderer = (() => {
     _toastTimeout = setTimeout(() => toastEl.classList.remove('on'), 2800);
   };
 
-  // SOLID - ISP: solo expone lo que App necesita suscribir
+  // SOLID - ISP: solo expone lo que App necesita suscribir al EventBus
   return { render, showToast };
 })();
 
 
-// SOLID - SRP: única responsabilidad → manejar diálogos de confirmación
+// ══════════════════════════════════════════════════════════════
+//  PATRÓN: MODULE — ModalModule
+//  Encapsula el comportamiento del modal de confirmación.
+//  El estado _pendingCallback es privado.
+//
+//  SOLID - SRP: única responsabilidad → diálogos de confirmación
+//  BUG FIX: callback se guarda ANTES de _hide() para no perderlo
+// ══════════════════════════════════════════════════════════════
 const ModalModule = (() => {
+  // PATRÓN MODULE: estado privado
   let _pendingCallback = null;
 
   const _overlay    = document.getElementById('overlay');
@@ -340,8 +391,8 @@ const ModalModule = (() => {
   };
 
   _btnConfirm.addEventListener('click', () => {
-    // Clean Code: variable local con nombre que explica su intención
-    // BUG FIX: se guarda el callback antes de _hide() porque _hide limpia _pendingCallback
+    // BUG FIX + Clean Code: se guarda referencia antes de _hide()
+    // porque _hide() limpia _pendingCallback → si no, nunca se ejecuta
     const callbackToRun = _pendingCallback;
     _hide();
     if (callbackToRun) callbackToRun();
@@ -353,16 +404,25 @@ const ModalModule = (() => {
     if (event.target === _overlay) _hide();
   });
 
-  // SOLID - ISP: solo expone show, hide es privado
+  // SOLID - ISP: solo expone show, hide es un detalle interno
   return { show: _show };
 })();
 
 
-// SOLID - DIP: App depende de abstracciones (EventBus, módulos) no de implementaciones
-// SOLID - SRP: única responsabilidad → arrancar y conectar la aplicación
+// ══════════════════════════════════════════════════════════════
+//  BOOTSTRAP — App
+//  Punto de entrada único de la aplicación.
+//  Conecta todos los módulos a través del EventBus (Observer).
+//  No contiene lógica de negocio, solo inicialización.
+//
+//  SOLID - DIP: App depende de abstracciones (EventBus, módulos)
+//  SOLID - SRP: única responsabilidad → arrancar y conectar
+// ══════════════════════════════════════════════════════════════
 const App = (() => {
   const init = () => {
-    // SOLID - DIP: Renderer se conecta a través de EventBus, no directamente
+
+    // PATRÓN OBSERVER: Renderer se suscribe, no es llamado directamente
+    // Cuando AssignmentModule publica 'stateChanged', Renderer reacciona solo
     EventBus.subscribe('stateChanged', Renderer.render);
     EventBus.subscribe('toast',        Renderer.showToast);
 
@@ -370,7 +430,7 @@ const App = (() => {
       ModalModule.show(
         'Nueva semana',
         'Se generarán asignaciones para la próxima semana respetando la rotación actual. ¿Continuar?',
-        AssignmentModule.newWeek
+        AssignmentModule.newWeek  // SOLID DIP: se pasa la función, no se llama directamente
       );
     });
 
@@ -378,14 +438,16 @@ const App = (() => {
       ModalModule.show(
         'Resetear todo',
         'Se borrarán todos los datos y se reiniciará la rotación desde el principio. Esta acción no se puede deshacer.',
-        AssignmentModule.reset
+        AssignmentModule.reset    // SOLID DIP: se pasa la función, no se llama directamente
       );
     });
 
+    // Inicia la lógica: carga desde storage o crea la semana 1
     AssignmentModule.init();
   };
 
   return { init };
 })();
 
+// Arranca la app cuando el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', App.init);
